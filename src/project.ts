@@ -1,4 +1,4 @@
-import { basename } from "@std/path";
+import { basename } from "jsr:@std/path@^1.0.0";
 
 // deno-lint-ignore no-control-regex -- 仕様 4.1 が制御文字の除去を定めている
 const CONTROL_CHARS = /[\u0000-\u001f\u007f-\u009f]/g;

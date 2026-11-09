@@ -1,4 +1,4 @@
-import { colors } from "@cliffy/ansi/colors";
+import { colors } from "jsr:@cliffy/ansi@^1.3.1/colors";
 import {
   CLASP_ARGS,
   evaluateClaspVersion,
