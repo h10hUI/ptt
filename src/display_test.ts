@@ -57,8 +57,8 @@ const blockWidthAt = (elapsedSec: number): number => {
 };
 
 // 消去より先に本文を書くと前の表示が残るため、消去シーケンスが本文より前にあることを確認する。
-const assertEraseBeforeBody = (out: string, bodyText: string): void => {
-  const upIndex = out.indexOf("\x1b[4A");
+const assertEraseBeforeBody = (out: string, bodyText: string, up = 4): void => {
+  const upIndex = out.indexOf(`\x1b[${up}A`);
   const eraseIndex = out.indexOf("\x1b[0J");
   const bodyIndex = out.indexOf(bodyText);
   assert(upIndex >= 0);
@@ -148,11 +148,11 @@ Deno.test("createDisplay: 2フレーム目以降は5行上へ戻してから再�
   assertEraseBeforeBody(writes[1], "█");
 });
 
-Deno.test("createDisplay: コロンは点灯と消灯を交互に切り替え、同じ図形のまま色だけ変える", () => {
+Deno.test("createDisplay: コロンは経過秒の偶奇で点灯と消灯を切り替え、同じ図形のまま色だけ変える", () => {
   const { writes, display } = makeDisplay({ palette: markerPalette });
   display.live(4392);
-  display.live(4392);
-  display.live(4392);
+  display.live(4393);
+  display.live(4394);
 
   const frames = writes.map(stripAnsi);
   assert(frames[0].includes("{"));
@@ -164,23 +164,44 @@ Deno.test("createDisplay: コロンは点灯と消灯を交互に切り替え、
 
   assert(frames[2].includes("["));
   assertFalse(frames[2].includes("("));
-
-  const layouts = frames.map(removePaletteMarkers);
-  assertEquals(layouts[0], layouts[1]);
-  assertEquals(layouts[1], layouts[2]);
 });
 
-Deno.test("createDisplay: 1行表示のあいだはコロンの点滅状態を進めない", () => {
+Deno.test("createDisplay: コロンの点滅は描画回数でなく経過秒で決まる（1行表示を挟んでも位相がずれない）", () => {
   let current: DisplaySize | null = { columns: 80, rows: 4 };
   const { writes, display } = makeDisplay({ size: () => current, palette: markerPalette });
   display.live(0);
 
   current = { columns: 80, rows: 24 };
   display.live(1);
+  display.live(1);
 
-  const block = stripAnsi(writes[1]);
-  assert(block.includes("["));
-  assertFalse(block.includes("("));
+  assert(stripAnsi(writes[1]).includes("("));
+  assert(stripAnsi(writes[2]).includes("("));
+  assertFalse(stripAnsi(writes[2]).includes("["));
+});
+
+Deno.test("createDisplay: 点灯と消灯で表示幅と行数は変わらない", () => {
+  const { writes, display } = makeDisplay({ palette: markerPalette });
+  display.live(4392);
+  display.live(4393);
+
+  const shapes = writes.map((w) =>
+    linesOf(w).map(removePaletteMarkers).map(widthOf)
+  );
+  assertEquals(shapes[0], shapes[1]);
+});
+
+Deno.test("createDisplay: 描画後に幅が狭まって折り返す場合は、折り返し後の物理行数ぶん戻って消す", () => {
+  let current: DisplaySize | null = { columns: 200, rows: 24 };
+  const { writes, display } = makeDisplay({ size: () => current });
+  display.live(0);
+  const blockWidth = widthOf(linesOf(writes[0])[0]);
+
+  // 幅が半分未満になると各行が3行に折り返す（ceil(w / (w/2 - 1)) = 3）
+  current = { columns: Math.floor(blockWidth / 2) - 1, rows: 24 };
+  display.message("停止");
+
+  assert(writes[1].includes("\x1b[14A"));
 });
 
 Deno.test("createDisplay: 幅がブロック表示に足りるときだけブロックし、1列足りないと1行表示へ切り替える", () => {
@@ -288,7 +309,7 @@ Deno.test("createDisplay: ブロック表示から1行表示に切り替わる�
   display.live(1);
 
   const out = writes[1];
-  assertEraseBeforeBody(out, formatElapsed(1));
+  assertEraseBeforeBody(out, formatElapsed(1), 9);
   assertEquals(linesOf(out).length, 1);
   assert(stripAnsi(out).includes(formatElapsed(1)));
   assertFalse(stripAnsi(out).includes("█"));
