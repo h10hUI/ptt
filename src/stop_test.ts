@@ -6,13 +6,14 @@ const at = (h: number, m: number, s: number, ms = 0) => new Date(2026, 9, 30, h,
 
 const makeDeps = (
   calls: string[],
-  opts: { sendOk?: boolean; showThrows?: boolean } = {},
+  opts: { sendOk?: boolean; showThrows?: boolean; pendingExists?: boolean } = {},
 ): StopDeps & { shown: string[]; written: Date[] } => {
   const shown: string[] = [];
   const written: Date[] = [];
   return {
     shown,
     written,
+    pendingExists: () => opts.pendingExists ?? true,
     writePending: (end: Date) => {
       calls.push("write");
       written.push(end);
@@ -114,4 +115,13 @@ Deno.test("finalizeStop: 停止理由が違っても終了コードは同じ（�
       0,
     );
   }
+});
+
+Deno.test("finalizeStop: 退避ファイルが無い（別プロセスが引き取り済み）なら書き直さず送信もしない", async () => {
+  const calls: string[] = [];
+  const deps = makeDeps(calls, { pendingExists: false });
+  const code = await finalizeStop({ reason: "sleep", start: at(10, 0, 0), end: at(10, 45, 10), deps });
+  assertEquals(calls, ["show"]);
+  assertEquals(deps.written, []);
+  assertEquals(code, 0);
 });

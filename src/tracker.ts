@@ -1,5 +1,6 @@
 import { evaluateIdle } from "./idle.ts";
 import type { StopReason } from "./stop.ts";
+import { runBestEffort } from "./util.ts";
 
 const SLEEP_GAP_MS = 60_000;
 const ALIVE_EVERY = 10;
@@ -23,15 +24,6 @@ export const planTick = (input: {
   if (input.tickCount % ALIVE_EVERY === 0) steps.push("alive");
   if (input.tickCount % IDLE_EVERY === 0) steps.push("idle");
   return { kind: "continue", steps };
-};
-
-// 表示更新・生存時刻更新の失敗で計測を止めない。最後の保存は停止時にもう一度試みる
-export const runBestEffort = (step: () => void): void => {
-  try {
-    step();
-  } catch {
-    // 無視する
-  }
 };
 
 export type TrackerDeps = {

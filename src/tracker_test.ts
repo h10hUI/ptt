@@ -1,5 +1,5 @@
 import { assertEquals } from "jsr:@std/assert@1";
-import { planTick, runBestEffort } from "./tracker.ts";
+import { planTick } from "./tracker.ts";
 
 const T0 = 1_000_000;
 
@@ -37,13 +37,4 @@ Deno.test("planTick: 通常の回は表示更新のみ。10回に1回は生存�
 Deno.test("planTick: スリープ判定の回はアイドル判定・表示・生存更新をしない（スリープ判定が先）", () => {
   const plan = planTick({ nowMs: T0 + 120_000, lastCheckMs: T0, tickCount: 30 });
   assertEquals(plan, { kind: "sleep", endMs: T0 });
-});
-
-Deno.test("runBestEffort: 例外を投げても呼び出し元に伝えない", () => {
-  let called = false;
-  runBestEffort(() => {
-    called = true;
-    throw new Error("ENOSPC");
-  });
-  assertEquals(called, true);
 });

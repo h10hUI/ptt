@@ -120,3 +120,15 @@ Deno.test("claimPending: 古い .json を claim した直後の .sending は、�
   assertEquals(collectResendTargets(dir, new Date()), []);
   assertEquals(names(dir), ["7-7.sending"]);
 });
+
+Deno.test("collectResendTargets: 2分以上前の .tmp と .sent は削除し、新しいものは残す", () => {
+  const dir = tmp();
+  Deno.writeTextFileSync(`${dir}/7-7.json.tmp`, "{}");
+  Deno.writeTextFileSync(`${dir}/8-8.sending.sent`, "{}");
+  Deno.writeTextFileSync(`${dir}/9-9.json.tmp`, "{}");
+  Deno.utimeSync(`${dir}/7-7.json.tmp`, ago(180), ago(180));
+  Deno.utimeSync(`${dir}/8-8.sending.sent`, ago(180), ago(180));
+  Deno.utimeSync(`${dir}/9-9.json.tmp`, ago(30), ago(30));
+  assertEquals(collectResendTargets(dir, NOW), []);
+  assertEquals(names(dir), ["9-9.json.tmp"]);
+});

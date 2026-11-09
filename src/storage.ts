@@ -1,5 +1,6 @@
 import { CODE_JS, buildAppsscriptJson } from "./gas_files.ts";
 import type { PttPaths } from "./paths.ts";
+import { isObject } from "./util.ts";
 
 export type PttConfig = { gasUrl: string; spreadsheetUrl: string };
 
@@ -9,9 +10,6 @@ export const ensureDataDirs = (paths: PttPaths): void => {
     Deno.chmodSync(dir, 0o700);
   }
 };
-
-const isObject = (v: unknown): v is Record<string, unknown> =>
-  typeof v === "object" && v !== null;
 
 const readJson = (path: string): unknown => {
   try {

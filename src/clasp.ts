@@ -1,3 +1,5 @@
+import { isObject } from "./util.ts";
+
 export const CLASP_ARGS = {
   version: ["--version"],
   showAuthorizedUser: ["show-authorized-user", "--json"],
@@ -80,9 +82,6 @@ export const evaluateClaspVersion = (run: ClaspRun): ClaspCheck => {
   }
   return major < 3 ? { ok: false, message: UPGRADE_MESSAGE } : { ok: true };
 };
-
-const isObject = (v: unknown): v is Record<string, unknown> =>
-  typeof v === "object" && v !== null && !Array.isArray(v);
 
 const isNonEmptyString = (v: unknown): v is string => typeof v === "string" && v !== "";
 

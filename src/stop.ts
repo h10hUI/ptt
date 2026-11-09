@@ -1,9 +1,12 @@
 import { formatElapsed, truncateToSecond } from "./time.ts";
+import { runBestEffort } from "./util.ts";
 
 export type StopReason = "idle" | "sleep" | "signal";
 export type StopOutcome = "sent" | "discarded" | "failed";
 
 export type StopDeps = {
+  // 退避ファイル（.json）がまだ残っているか。無ければ別プロセスが引き取り済み
+  pendingExists: () => boolean;
   writePending: (end: Date) => void;
   deletePending: () => void;
   send: () => Promise<boolean>;
@@ -42,13 +45,12 @@ export const finalizeStop = async (input: {
   deps: StopDeps;
 }): Promise<0 | 1> => {
   const { reason, start, end, deps } = input;
-  const show = (message: string): void => {
-    try {
-      deps.show(message);
-    } catch {
-      // 表示先が無い場合のエラーは無視する
-    }
-  };
+  const show = (message: string): void => runBestEffort(() => deps.show(message));
+  // スリープ中に別プロセスが再送で引き取った記録を、復帰後に書き直して二重送信しない
+  if (!deps.pendingExists()) {
+    show(stopMessage(reason, durationSecOf(start, end)));
+    return exitCodeFor("sent");
+  }
   deps.writePending(end);
   if (isShortRecord(start, end)) {
     deps.deletePending();

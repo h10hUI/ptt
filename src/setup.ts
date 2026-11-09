@@ -10,6 +10,7 @@ import {
 import type { ClaspRun } from "./clasp.ts";
 import type { PttPaths } from "./paths.ts";
 import type { Fetcher } from "./sender.ts";
+import { sleep } from "./util.ts";
 import {
   ensureDataDirs,
   readDeploymentId,
@@ -79,8 +80,6 @@ export const planSetup = (state: {
 export const isAppsScriptApiDisabled = (output: string): boolean =>
   (/Apps Script API/i.test(output) && /(not enabled|disabled|not been used)/i.test(output)) ||
   output.includes("home/usersettings");
-
-const sleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));
 
 const exists = (path: string): boolean => {
   try {

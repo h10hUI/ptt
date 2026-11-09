@@ -74,8 +74,21 @@ export const isResendTarget = (lastAliveIso: string, now: Date): boolean =>
 export const isStaleSending = (mtime: Date, now: Date): boolean =>
   now.getTime() - mtime.getTime() >= STALE_SENDING_MS;
 
+// 書き込み途中の強制終了で残った一時ファイルと、送信済みで消せず退避したファイルを片付ける
+const isOrphanName = (name: string): boolean => name.endsWith(".tmp") || name.endsWith(".sent");
+
 export const collectResendTargets = (dir: string, now: Date): string[] => {
   const entries = [...Deno.readDirSync(dir)].filter((e) => e.isFile);
+  for (const e of entries) {
+    if (!isOrphanName(e.name)) continue;
+    const path = join(dir, e.name);
+    try {
+      const mtime = Deno.statSync(path).mtime;
+      if (mtime !== null && isStaleSending(mtime, now)) Deno.removeSync(path);
+    } catch {
+      // 他プロセスが処理した場合は何もしない
+    }
+  }
   for (const e of entries) {
     if (!e.name.endsWith(".sending")) continue;
     const path = join(dir, e.name);

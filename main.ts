@@ -10,9 +10,8 @@ import { finalizeStop } from "./src/stop.ts";
 import { ensureDataDirs, readConfig } from "./src/storage.ts";
 import { toOffsetIso } from "./src/time.ts";
 import { runTracker } from "./src/tracker.ts";
+import { runBestEffort, sleep } from "./src/util.ts";
 import { join } from "@std/path";
-
-const sleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));
 
 const main = async (): Promise<number> => {
   const paths = getPaths();
@@ -47,13 +46,7 @@ const main = async (): Promise<number> => {
 
   const result = await runTracker(start.getTime(), {
     now: () => Date.now(),
-    showElapsed: (sec) => {
-      try {
-        display.live(sec);
-      } catch {
-        // 表示先が無い場合のエラーは無視する
-      }
-    },
+    showElapsed: (sec) => runBestEffort(() => display.live(sec)),
     writeAlive: writePending,
     readIdleMs: runIoreg,
   });
@@ -63,6 +56,15 @@ const main = async (): Promise<number> => {
     start,
     end: result.end,
     deps: {
+      pendingExists: () => {
+        try {
+          Deno.statSync(pendingPath);
+          return true;
+        } catch (e) {
+          if (e instanceof Deno.errors.NotFound) return false;
+          throw e;
+        }
+      },
       writePending,
       deletePending: () => {
         try {
