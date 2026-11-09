@@ -25,9 +25,9 @@ export type DisplayOptions = {
 
 export const bluePalette: BlockPalette = {
   digits: (text) => colors.brightBlue(text),
-  // dim 属性（SGR 2）は端末によって無視され、点灯と見分けがつかないため、256色で明度差を明示する
+  // 点灯（偶数秒）は既存の明るいブルー rgb8(33)、消灯（奇数秒）は白にして、1秒ごとに交互に切り替える
   colonLit: (text) => colors.rgb8(text, 33),
-  colonDim: (text) => colors.rgb8(text, 17),
+  colonDim: (text) => colors.white(text),
 };
 
 const BLOCK_HEIGHT = 5;

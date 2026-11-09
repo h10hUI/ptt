@@ -1,6 +1,7 @@
 import { assert, assertEquals, assertFalse, assertNotEquals } from "jsr:@std/assert@1";
+import { colors } from "jsr:@cliffy/ansi@^1.3.1/colors";
 import type { BlockPalette, Display, DisplayOptions, DisplaySize } from "./display.ts";
-import { createDisplay } from "./display.ts";
+import { bluePalette, createDisplay } from "./display.ts";
 import { formatElapsed } from "./time.ts";
 
 // CSI は表示幅に含めない。色（SGR）も同じ正規表現で落とせる。
@@ -164,6 +165,34 @@ Deno.test("createDisplay: コロンは経過秒の偶奇で点灯と消灯を切
 
   assert(frames[2].includes("["));
   assertFalse(frames[2].includes("("));
+});
+
+Deno.test("createDisplay: bluePalette は経過秒の偶奇でコロンを明るいブルーと白に切り替え、数字は明るいブルーのまま", () => {
+  assertEquals(bluePalette.digits("█"), colors.brightBlue("█"));
+  assertEquals(bluePalette.colonLit("█"), colors.rgb8("█", 33));
+  assertEquals(bluePalette.colonDim("█"), colors.white("█"));
+
+  const { writes, display } = makeDisplay({ palette: bluePalette });
+  display.live(4392);
+  display.live(4393);
+  display.live(4394);
+
+  const [evenFrame, oddFrame, backToEvenFrame] = writes;
+
+  assert(evenFrame.includes(colors.rgb8("█", 33)));
+  assertFalse(evenFrame.includes(colors.white("█")));
+
+  assert(oddFrame.includes(colors.white("█")));
+  assertFalse(oddFrame.includes(colors.rgb8("█", 33)));
+
+  assert(backToEvenFrame.includes(colors.rgb8("█", 33)));
+  assertFalse(backToEvenFrame.includes(colors.white("█")));
+
+  for (const frame of [evenFrame, oddFrame, backToEvenFrame]) {
+    assertFalse(frame.includes(colors.rgb8("█", 17)));
+    assert(frame.includes(colors.brightBlue("███")));
+    assert(frame.includes(colors.brightBlue("  █")));
+  }
 });
 
 Deno.test("createDisplay: コロンの点滅は描画回数でなく経過秒で決まる（1行表示を挟んでも位相がずれない）", () => {
