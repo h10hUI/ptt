@@ -133,6 +133,10 @@ Deno.test("planSetup: .clasp.json があれば手順2をスキップ、deploymen
     createProject: true,
     deployMode: "create",
   });
+  assertEquals(planSetup({ hasClaspJson: false, hasDeploymentId: true }), {
+    createProject: true,
+    deployMode: "create",
+  });
   assertEquals(planSetup({ hasClaspJson: true, hasDeploymentId: false }), {
     createProject: false,
     deployMode: "create",

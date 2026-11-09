@@ -68,7 +68,8 @@ export const planSetup = (state: {
   hasDeploymentId: boolean;
 }): SetupPlan => ({
   createProject: !state.hasClaspJson,
-  deployMode: state.hasDeploymentId ? "update" : "create",
+  // 新しいプロジェクトを作る場合、古い deployment.json の ID は別プロジェクトのものなので使わない
+  deployMode: state.hasClaspJson && state.hasDeploymentId ? "update" : "create",
 });
 
 export const isAppsScriptApiDisabled = (output: string): boolean =>

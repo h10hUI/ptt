@@ -82,3 +82,13 @@ Deno.test("writeGasFiles: gas/ を作成し Code.js と appsscript.json を書�
     "America/New_York",
   );
 });
+
+Deno.test("readConfig / readDeploymentId: 壊れた JSON は null（未作成と同じ扱い）", () => {
+  const paths = buildPaths(newHome());
+  ensureDataDirs(paths);
+  Deno.mkdirSync(paths.gasDir, { recursive: true });
+  Deno.writeTextFileSync(paths.config, '{"gasUrl": "https://exa');
+  Deno.writeTextFileSync(paths.deploymentJson, "");
+  assertEquals(readConfig(paths), null);
+  assertEquals(readDeploymentId(paths), null);
+});

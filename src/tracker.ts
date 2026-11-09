@@ -25,6 +25,15 @@ export const planTick = (input: {
   return { kind: "continue", steps };
 };
 
+// 表示更新・生存時刻更新の失敗で計測を止めない。最後の保存は停止時にもう一度試みる
+export const runBestEffort = (step: () => void): void => {
+  try {
+    step();
+  } catch {
+    // 無視する
+  }
+};
+
 export type TrackerDeps = {
   now: () => number;
   showElapsed: (elapsedSec: number) => void;
@@ -80,9 +89,13 @@ export const runTracker = (startMs: number, deps: TrackerDeps): Promise<TrackerR
       }
       lastCheckMs = nowMs;
       for (const step of plan.steps) {
-        if (step === "display") deps.showElapsed(Math.floor((nowMs - startMs) / 1000));
-        else if (step === "alive") deps.writeAlive(new Date(nowMs));
-        else void checkIdle(nowMs);
+        if (step === "display") {
+          runBestEffort(() => deps.showElapsed(Math.floor((nowMs - startMs) / 1000)));
+        } else if (step === "alive") {
+          runBestEffort(() => deps.writeAlive(new Date(nowMs)));
+        } else {
+          checkIdle(nowMs).catch(() => {});
+        }
       }
     };
   });

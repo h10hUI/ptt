@@ -17,7 +17,8 @@ const readJson = (path: string): unknown => {
   try {
     return JSON.parse(Deno.readTextFileSync(path));
   } catch (e) {
-    if (e instanceof Deno.errors.NotFound) return null;
+    // 壊れた JSON（書き込み途中のクラッシュなど）は未作成と同じ扱いにして再セットアップさせる
+    if (e instanceof Deno.errors.NotFound || e instanceof SyntaxError) return null;
     throw e;
   }
 };
