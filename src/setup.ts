@@ -42,12 +42,16 @@ export const pollUntil = async (opts: {
   }
 };
 
+export const APPROVAL_REQUEST_TIMEOUT_MS = 30_000;
+
 export const fetchApproval = async (
   url: string,
   fetcher: Fetcher,
+  timeoutMs: number = APPROVAL_REQUEST_TIMEOUT_MS,
 ): Promise<{ spreadsheetUrl: string } | null> => {
   try {
-    const res = await fetcher(url, { redirect: "follow" });
+    // 通信が止まっても pollUntil の全体タイムアウトに到達できるよう、1回ごとに打ち切る
+    const res = await fetcher(url, { redirect: "follow", signal: AbortSignal.timeout(timeoutMs) });
     const parsed: unknown = JSON.parse(await res.text());
     if (typeof parsed !== "object" || parsed === null) return null;
     const body = parsed as Record<string, unknown>;

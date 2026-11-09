@@ -128,6 +128,14 @@ Deno.test("fetchApproval: JSON でも status が ptt ok でなければ未承認
   );
 });
 
+Deno.test("fetchApproval: 応答が止まっても指定時間で打ち切って未承認（null）を返す", async () => {
+  const hanging = (_url: string, init: RequestInit): Promise<Response> =>
+    new Promise((_, reject) => {
+      init.signal?.addEventListener("abort", () => reject(new DOMException("timeout", "TimeoutError")));
+    });
+  assertEquals(await fetchApproval("https://x/exec", hanging, 20), null);
+});
+
 Deno.test("planSetup: .clasp.json があれば手順2をスキップ、deployment.json の ID の有無で create / update を切り替える", () => {
   assertEquals(planSetup({ hasClaspJson: false, hasDeploymentId: false }), {
     createProject: true,

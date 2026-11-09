@@ -47,8 +47,18 @@ export const claimPending = (jsonPath: string): string | null => {
     return null;
   }
   // 復旧判定は .sending の更新日時を送信開始時刻とみなすため、claim 時刻に更新する
-  const now = new Date();
-  Deno.utimeSync(sending, now, now);
+  // 更新できないと古い更新日時のまま復旧対象になり二重送信になりうるため、戻して未取得扱いにする
+  try {
+    const now = new Date();
+    Deno.utimeSync(sending, now, now);
+  } catch {
+    try {
+      Deno.renameSync(sending, jsonPath);
+    } catch {
+      // 戻せない場合は .sending のまま復旧処理に任せる
+    }
+    return null;
+  }
   return sending;
 };
 

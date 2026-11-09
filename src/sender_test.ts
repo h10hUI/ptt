@@ -242,3 +242,19 @@ Deno.test("resendStale: 送信失敗した記録は .json に戻って残る", a
   assertEquals(results, ["failed"]);
   assertEquals(names(dir), ["1-1.json"]);
 });
+
+Deno.test("sendPendingFile: 送信成功後に .sending を消せなくても sent を返し、復旧対象外の名前に退避する", async () => {
+  const dir = tmp();
+  const path = `${dir}/1-1.json`;
+  writeRecord(path, new Date(2026, 0, 1, 10, 0, 0), new Date(2026, 0, 1, 11, 0, 0));
+  const fetcher: Fetcher = () => {
+    // 送信中に .sending を中身のあるディレクトリに差し替え、removeSync を失敗させる
+    const sending = `${dir}/1-1.sending`;
+    Deno.removeSync(sending);
+    Deno.mkdirSync(sending);
+    Deno.writeTextFileSync(`${sending}/x`, "x");
+    return json({ ok: true });
+  };
+  assertEquals(await sendPendingFile(path, makeDeps(fetcher)), "sent");
+  assertEquals(names(dir), ["1-1.sending.sent"]);
+});

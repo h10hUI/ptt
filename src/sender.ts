@@ -49,6 +49,20 @@ export const postRecords = async (
   }
 };
 
+// 送信済みの .sending を消せなくても例外にしない。残ると復旧で再送され二重になるため、
+// 消せない場合は復旧対象外の名前に退避する
+const discardSent = (sending: string): void => {
+  try {
+    Deno.removeSync(sending);
+  } catch {
+    try {
+      Deno.renameSync(sending, `${sending}.sent`);
+    } catch {
+      // これ以上できることはない
+    }
+  }
+};
+
 export const sendPendingFile = async (path: string, deps: SendDeps): Promise<SendOutcome> => {
   const sending = claimPending(path);
   if (sending === null) return "skipped";
@@ -63,7 +77,7 @@ export const sendPendingFile = async (path: string, deps: SendDeps): Promise<Sen
   const timeoutMs = deps.timeoutMs ?? SEND_TIMEOUT_MS;
   for (let attempt = 1; attempt <= SEND_ATTEMPTS; attempt++) {
     if (await postRecords(deps.url, records, { timeoutMs, fetcher: deps.fetcher })) {
-      Deno.removeSync(sending);
+      discardSent(sending);
       return "sent";
     }
     if (attempt < SEND_ATTEMPTS) await deps.sleep(SEND_RETRY_INTERVAL_MS);
