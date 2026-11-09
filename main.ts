@@ -1,4 +1,4 @@
-import { createDisplay } from "./src/display.ts";
+import { bluePalette, createDisplay } from "./src/display.ts";
 import { runIoreg } from "./src/idle.ts";
 import { getPaths } from "./src/paths.ts";
 import { pendingFileName, writePendingAtomic } from "./src/pending.ts";
@@ -34,6 +34,16 @@ const main = async (): Promise<number> => {
   const display = createDisplay({
     isTerminal: Deno.stdout.isTerminal(),
     write: (text) => Deno.stdout.writeSync(encoder.encode(text)),
+    size: () => {
+      // 端末外では Deno.consoleSize() が例外になる。可否を判定できないため1行表示へ倒す
+      try {
+        return Deno.consoleSize();
+      } catch {
+        return null;
+      }
+    },
+    colorEnabled: !Deno.noColor,
+    palette: bluePalette,
   });
 
   const project = normalizeProjectName(Deno.cwd());
