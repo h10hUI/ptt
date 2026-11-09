@@ -1,0 +1,14 @@
+{
+  "name": "@h10hui/ptt",
+  "version": "0.1.0",
+  "exports": "./main.ts",
+  "imports": {
+    "@cliffy/ansi": "jsr:@cliffy/ansi@^1.3.1",
+    "@std/path": "jsr:@std/path@^1.0.0"
+  },
+  "tasks": {
+    "start": "deno run --allow-net=script.google.com,script.googleusercontent.com --allow-run=ioreg,clasp --allow-env=HOME --allow-read=$HOME/.local/share/ptt --allow-write=$HOME/.local/share/ptt main.ts",
+    "check": "deno check main.ts src/*.ts",
+    "test": "deno test -A src/"
+  }
+}
