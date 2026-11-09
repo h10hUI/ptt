@@ -1,4 +1,4 @@
-import { join } from "@std/path";
+import { join } from "jsr:@std/path@^1.0.0";
 
 export type PttPaths = {
   root: string;

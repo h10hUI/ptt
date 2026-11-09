@@ -1,4 +1,4 @@
-import { tty } from "@cliffy/ansi/tty";
+import { tty } from "jsr:@cliffy/ansi@^1.3.1/tty";
 import { formatElapsed } from "./time.ts";
 
 export type Display = {

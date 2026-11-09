@@ -11,7 +11,7 @@ import { ensureDataDirs, readConfig } from "./src/storage.ts";
 import { toOffsetIso } from "./src/time.ts";
 import { runTracker } from "./src/tracker.ts";
 import { runBestEffort, sleep } from "./src/util.ts";
-import { join } from "@std/path";
+import { join } from "jsr:@std/path@^1.0.0";
 
 const main = async (): Promise<number> => {
   const paths = getPaths();
