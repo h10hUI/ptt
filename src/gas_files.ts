@@ -10,25 +10,37 @@ export const buildAppsscriptJson = (timeZone: string): string =>
   ) + "\n";
 
 export const CODE_JS = `var SPREADSHEET_ID_KEY = "SPREADSHEET_ID";
+var SETUP_ID_KEY = "SETUP_ID";
 
-function getOrCreateSpreadsheet_() {
+function createSpreadsheet_() {
+  var ss = SpreadsheetApp.create('ptt');
+  ss.setSpreadsheetTimeZone(Session.getScriptTimeZone());
+  var sheet = ss.getSheets()[0];
+  sheet.getRange("A:A").setNumberFormat("@");
+  sheet.getRange("B:B").setNumberFormat("yyyy-mm-dd");
+  sheet.getRange("C:C").setNumberFormat("hh:mm:ss");
+  sheet.getRange("D:D").setNumberFormat("yyyy-mm-dd");
+  sheet.getRange("E:E").setNumberFormat("hh:mm:ss");
+  sheet.getRange("F:F").setNumberFormat("[h]:mm:ss");
+  sheet.getRange(1, 1, 1, 6).setValues([["プロジェクト名", "開始日", "開始時刻", "終了日", "終了時刻", "作業時間"]]);
+  PropertiesService.getScriptProperties().setProperty(SPREADSHEET_ID_KEY, ss.getId());
+  return ss;
+}
+
+function getOrCreateSpreadsheet_(setupId) {
   var lock = LockService.getScriptLock();
   lock.waitLock(30000);
   try {
     var props = PropertiesService.getScriptProperties();
+    if (setupId && props.getProperty(SETUP_ID_KEY) !== setupId) {
+      props.deleteProperty(SPREADSHEET_ID_KEY);
+      props.setProperty(SETUP_ID_KEY, setupId);
+    }
     var id = props.getProperty(SPREADSHEET_ID_KEY);
     if (id) {
       return SpreadsheetApp.openById(id);
     }
-    var ss = SpreadsheetApp.create('ptt');
-    ss.setSpreadsheetTimeZone(Session.getScriptTimeZone());
-    var sheet = ss.getSheets()[0];
-    sheet.getRange("A:A").setNumberFormat("@");
-    sheet.getRange("B:C").setNumberFormat("yyyy-mm-dd hh:mm:ss");
-    sheet.getRange("D:D").setNumberFormat("[h]:mm:ss");
-    sheet.getRange(1, 1, 1, 4).setValues([["プロジェクト名", "開始日時", "終了日時", "作業時間"]]);
-    props.setProperty(SPREADSHEET_ID_KEY, ss.getId());
-    return ss;
+    return createSpreadsheet_();
   } finally {
     lock.releaseLock();
   }
@@ -38,8 +50,9 @@ function json_(value) {
   return ContentService.createTextOutput(JSON.stringify(value)).setMimeType(ContentService.MimeType.JSON);
 }
 
-function doGet() {
-  var ss = getOrCreateSpreadsheet_();
+function doGet(e) {
+  var setupId = e && e.parameter && e.parameter.setup ? String(e.parameter.setup) : "";
+  var ss = getOrCreateSpreadsheet_(setupId);
   return json_({ status: "ptt ok", spreadsheetUrl: ss.getUrl() });
 }
 
@@ -52,21 +65,25 @@ function doPost(e) {
     }
     var tz = Session.getScriptTimeZone();
     var rows = records.map(function (r) {
+      var start = Utilities.parseDate(r.start, tz, "yyyy-MM-dd HH:mm:ss");
+      var end = Utilities.parseDate(r.end, tz, "yyyy-MM-dd HH:mm:ss");
       var durationSec = Number(r.durationSec);
       return [
         String(r.project),
-        Utilities.parseDate(r.start, tz, "yyyy-MM-dd HH:mm:ss"),
-        Utilities.parseDate(r.end, tz, "yyyy-MM-dd HH:mm:ss"),
+        start,
+        start,
+        end,
+        end,
         durationSec / 86400
       ];
     });
-    var ss = getOrCreateSpreadsheet_();
+    var ss = getOrCreateSpreadsheet_("");
     var lock = LockService.getScriptLock();
     lock.waitLock(30000);
     try {
       if (rows.length > 0) {
         var sheet = ss.getSheets()[0];
-        sheet.getRange(sheet.getLastRow() + 1, 1, rows.length, 4).setValues(rows);
+        sheet.getRange(sheet.getLastRow() + 1, 1, rows.length, 6).setValues(rows);
       }
     } finally {
       lock.releaseLock();
