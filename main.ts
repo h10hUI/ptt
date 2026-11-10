@@ -2,6 +2,7 @@ import { bluePalette, createDisplay } from "./src/display.ts";
 import { runIoreg } from "./src/idle.ts";
 import { getPaths } from "./src/paths.ts";
 import { pendingFileName, writePendingAtomic } from "./src/pending.ts";
+import { setProcessTitle } from "./src/process_title.ts";
 import { normalizeProjectName } from "./src/project.ts";
 import { resendStale, sendPendingFile } from "./src/sender.ts";
 import type { SendDeps } from "./src/sender.ts";
@@ -90,6 +91,8 @@ const main = async (): Promise<number> => {
   await resending;
   return code;
 };
+
+setProcessTitle();
 
 try {
   Deno.exit(await main());

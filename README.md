@@ -9,6 +9,7 @@ ptt（PTT Time Tracking）は、カレントディレクトリをプロジェク
 
 ## 前提
 
+- Deno 2.7.7 以上（起動時に `process.title` でプロセス名を `ptt` にするため）
 - Node.js 22 以上（clasp 3.x の動作要件）
 - clasp 3.x（`@google/clasp`）
 
