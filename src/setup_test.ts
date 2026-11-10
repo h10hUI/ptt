@@ -2,6 +2,7 @@ import { assertEquals } from "jsr:@std/assert@1";
 import {
   API_ENABLE_POLL,
   APPROVAL_POLL,
+  buildApprovalUrl,
   buildGasUrl,
   fetchApproval,
   isAppsScriptApiDisabled,
@@ -157,6 +158,12 @@ Deno.test("planSetup: .clasp.json があれば手順2をスキップ、deploymen
 
 Deno.test("buildGasUrl: https://script.google.com/macros/s/<ID>/exec", () => {
   assertEquals(buildGasUrl("AKfycbX-1_y"), "https://script.google.com/macros/s/AKfycbX-1_y/exec");
+});
+
+Deno.test("buildApprovalUrl: 承認URLに setup パラメータとしてセットアップIDを付ける", () => {
+  const base = buildGasUrl("AKfycbX-1_y");
+  assertEquals(buildApprovalUrl(base, "abc-123"), `${base}?setup=abc-123`);
+  assertEquals(buildApprovalUrl(base, "a b/c"), `${base}?setup=a%20b%2Fc`);
 });
 
 Deno.test("isAppsScriptApiDisabled: API 無効エラーを複数の文言で判定し、無関係なエラーは判定しない", () => {

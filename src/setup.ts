@@ -28,6 +28,10 @@ export const APPROVAL_POLL: PollSettings = { intervalMs: 3_000, timeoutMs: 600_0
 export const buildGasUrl = (deploymentId: string): string =>
   `https://script.google.com/macros/s/${deploymentId}/exec`;
 
+// セットアップごとに異なる ID を付けることで、GAS 側に新しいスプレッドシートを作らせる
+export const buildApprovalUrl = (gasUrl: string, setupId: string): string =>
+  `${gasUrl}?setup=${encodeURIComponent(setupId)}`;
+
 export const pollUntil = async (opts: {
   attempt: () => Promise<boolean>;
   intervalMs: number;
@@ -196,9 +200,9 @@ const stepDeploy = async (paths: PttPaths, plan: SetupPlan): Promise<string | nu
   return deploymentId;
 };
 
-const stepApproval = async (gasUrl: string): Promise<string | null> => {
+const stepApproval = async (approvalUrl: string): Promise<string | null> => {
   console.log("\n[4/4] 以下のURLを開いて、アクセスを許可してください。");
-  info(gasUrl);
+  info(approvalUrl);
   info("承認を待っています...");
   let spreadsheetUrl: string | null = null;
   const approved = await pollUntil({
@@ -206,7 +210,7 @@ const stepApproval = async (gasUrl: string): Promise<string | null> => {
     sleep,
     now: () => Date.now(),
     attempt: async () => {
-      const result = await fetchApproval(gasUrl, (u, init) => fetch(u, init));
+      const result = await fetchApproval(approvalUrl, (u, init) => fetch(u, init));
       if (result === null) return false;
       spreadsheetUrl = result.spreadsheetUrl;
       return true;
@@ -242,7 +246,8 @@ export const runSetup = async (paths: PttPaths): Promise<SetupResult> => {
   const deploymentId = await stepDeploy(paths, plan);
   if (deploymentId === null) return null;
   const gasUrl = buildGasUrl(deploymentId);
-  const spreadsheetUrl = await stepApproval(gasUrl);
+  const approvalUrl = buildApprovalUrl(gasUrl, crypto.randomUUID());
+  const spreadsheetUrl = await stepApproval(approvalUrl);
   if (spreadsheetUrl === null) return null;
   writeConfig(paths, { gasUrl, spreadsheetUrl });
   console.log("\nセットアップが完了しました。");
